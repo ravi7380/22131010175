@@ -1,1 +1,70 @@
+from flask import Flask, jsonify
+import requests
 
+app = Flask(_name_)
+
+# Define window size
+window_size = 10
+
+# Store numbers with type as key (e.g., 'e' for even)
+numbers = {}
+window_state = []  # Stores the last window size elements
+
+# Function to check if a response is valid
+def is_valid_response(response):
+    try:
+        data = response.json()
+        return response.status_code == 200 and "numbers" in data
+    except:
+        return False
+
+# Function to fetch numbers from test server based on type
+def fetch_numbers(number_type):
+    url = f"http://20.244.56.144/test/{number_type}"
+    try:
+        response = requests.get(url, timeout=0.5)  # Set timeout to 500ms
+        if is_valid_response(response):
+            return response.json()["numbers"]
+    except:
+        return []  # Return empty list on errors or timeout
+
+# Function to calculate average
+def calculate_average(data):
+    if len(data) > 0:
+        return sum(data) / len(data)
+    else:
+        return 0.0
+
+# API endpoint for calculating average
+@app.route("/numbers/<number_type>")
+def get_average(number_type):
+    global numbers, window_state
+
+    # Check for valid number type
+    if number_type not in ("p", "f", "e", "r"):
+        return jsonify({"error": "Invalid number type"}), 400
+
+    # Fetch numbers from test server
+    fetched_numbers = fetch_numbers(number_type)
+
+    # Update numbers dictionary with unique values
+    numbers[number_type] = list(set(numbers.get(number_type, []) + fetched_numbers))
+
+    # Update window state with latest numbers
+    window_state = numbers[number_type][-window_size:]
+
+    # Calculate average based on window size
+    average = calculate_average(window_state)
+
+    # Return response with previous state, current state, and average
+    return jsonify(
+        {
+            "windowPrevState": numbers[number_type]の前(mae=len(numbers[number_type]) - window_size),
+            "windowCurrState": window_state,
+            "numbers": fetched_numbers,
+            "avg": f"{average:.2f}",  # Format average to 2 decimal places
+        }
+    )
+
+if _name_ == "_main_":
+    app.run(host="localhost", port=9876)
