@@ -1,1 +1,73 @@
+// App.js
 
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AllProducts from './AllProducts';
+import ProductDetails from './ProductDetails';
+import { fetchCompanies, fetchProducts } from './api';
+import { makeStyles } from '@material-ui/core/styles'; // Material-UI styles
+
+const useStyles = makeStyles((theme) => ({
+  // ... product card styles
+  ratingIcon: {
+    color: '#f0b800', // adjust color based on rating
+  },
+  discountIcon: {
+    color: '#3f51b5', // adjust color based on discount
+  },
+  availabilityIcon: {
+    color: '#4caf50', // adjust color based on availability
+  },
+}));
+
+function App() {
+  const classes = useStyles();
+  const [companies, setCompanies] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [filters, setFilters] = useState({
+    category: '',
+    company: '',
+    rating: '',
+    minPrice: 0,
+    maxPrice: Infinity,
+    availability: '',
+    sortBy: '',
+    sortOrder: 'asc', // Default sort order
+  });
+
+  // Fetch companies and initial products on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      const companyData = await fetchCompanies();
+      setCompanies(companyData);
+      const productData = await fetchProducts(filters); // Initial product fetch
+      setProducts(productData);
+    };
+    fetchData();
+  }, []);
+
+  // Handle filter changes, sorting, pagination
+  // ... (implement logic)
+
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <AllProducts
+              companies={companies}
+              products={products}
+              filters={filters}
+              setFilters={setFilters}
+              classes={classes} // Pass Material-UI styles
+            />
+          }
+        />
+        <Route path="/product/:productId" element={<ProductDetails products={products} />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
